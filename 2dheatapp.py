@@ -122,6 +122,26 @@ div[data-testid="stDownloadButton"] > button:hover {
     border-color: #1a1a1a !important;
 }
 
+/* Fix number input +/- buttons */
+button[data-testid="stNumberInputStepUp"],
+button[data-testid="stNumberInputStepDown"] {
+    background-color: #f0ede8 !important;
+    color: #1a1a1a !important;
+    border: 1px solid #ddd !important;
+    width: auto !important;
+    padding: 4px 10px !important;
+    font-size: 1rem !important;
+}
+button[data-testid="stNumberInputStepUp"]:hover,
+button[data-testid="stNumberInputStepDown"]:hover {
+    background-color: #e0ddd8 !important;
+}
+
+/* Fix checkboxes */
+input[type="checkbox"] {
+    accent-color: #1a1a1a !important;
+}
+
 /* Input labels */
 .stNumberInput label, .stSlider label,
 .stSelectbox label, .stCheckbox label,
@@ -310,6 +330,21 @@ tolerance = st.select_slider(
 
 # ── Convection ────────────────────────────────────────────────────────
 st.markdown('<div class="section-label">Convection — Optional</div>', unsafe_allow_html=True)
+st.markdown("""
+<style>
+div[data-testid="stCheckbox"] label p {
+    font-family: 'IBM Plex Sans', sans-serif !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    color: #1a1a1a !important;
+}
+div[data-testid="stCheckbox"] input[type="checkbox"] {
+    accent-color: #1a1a1a !important;
+    width: 16px !important;
+    height: 16px !important;
+}
+</style>
+""", unsafe_allow_html=True)
 use_conv = st.checkbox("Enable convective boundary conditions")
 if use_conv:
     cv1, cv2, cv3 = st.columns(3)
@@ -317,11 +352,70 @@ if use_conv:
     k    = cv2.number_input("k  (W/mK)",  value=1.0,  min_value=0.01)
     Tinf = cv3.number_input("T-infinity  (°C)", value=25.0)
     st.caption("Select faces with convection — all others retain fixed temperature")
+
+    # Colored face selector cards
+    face_colors = {
+        "Top":    {"bg": "#4A90D9", "hover": "#3578C4"},
+        "Bottom": {"bg": "#E8704A", "hover": "#D45D37"},
+        "Left":   {"bg": "#5BAD6F", "hover": "#47995B"},
+        "Right":  {"bg": "#9B6BB5", "hover": "#855EA0"},
+    }
+
+    for face in ["conv_top", "conv_bottom", "conv_left", "conv_right"]:
+        if face not in st.session_state:
+            st.session_state[face] = False
+
+    st.markdown("""
+    <style>
+    div[data-testid="stButton"].face-btn > button {
+        width: 100% !important;
+        padding: 18px 10px !important;
+        font-size: 0.78rem !important;
+        letter-spacing: 0.1em !important;
+        border-radius: 6px !important;
+        font-family: 'IBM Plex Mono', monospace !important;
+        font-weight: 600 !important;
+        border: none !important;
+        transition: opacity 0.2s !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     f1, f2, f3, f4 = st.columns(4)
-    conv_top    = f1.checkbox("Top")
-    conv_bottom = f2.checkbox("Bottom")
-    conv_left   = f3.checkbox("Left")
-    conv_right  = f4.checkbox("Right")
+
+    faces = [
+        ("conv_top",    "Top",    "#4A90D9", f1),
+        ("conv_bottom", "Bottom", "#E8704A", f2),
+        ("conv_left",   "Left",   "#5BAD6F", f3),
+        ("conv_right",  "Right",  "#9B6BB5", f4),
+    ]
+
+    for key, label, color, col in faces:
+        active = st.session_state[key]
+        bg     = color if active else "#FFFFFF"
+        fg     = "#FFFFFF" if active else "#555"
+        border = color
+        tag    = "ON" if active else "OFF"
+        with col:
+            st.markdown(
+                f"""<div style="background:{bg}; color:{fg}; border:2px solid {border};
+                border-radius:6px; padding:14px 10px; text-align:center;
+                font-family:'IBM Plex Mono',monospace; font-size:0.78rem;
+                font-weight:600; letter-spacing:0.08em; cursor:pointer;
+                margin-bottom:4px;">
+                {label}<br><span style="font-size:0.6rem; opacity:0.85;">{tag}</span>
+                </div>""",
+                unsafe_allow_html=True
+            )
+            if st.button(f"Toggle {label}", key=f"btn_{key}"):
+                st.session_state[key] = not st.session_state[key]
+                st.rerun()
+
+    conv_top    = st.session_state["conv_top"]
+    conv_bottom = st.session_state["conv_bottom"]
+    conv_left   = st.session_state["conv_left"]
+    conv_right  = st.session_state["conv_right"]
+
     dirichlet_top    = not conv_top
     dirichlet_bottom = not conv_bottom
     dirichlet_left   = not conv_left
